@@ -1,25 +1,36 @@
 from fastapi import FastAPI, Request
-from tvDatafeed import TvDatafeed, Interval
+import ccxt
+import datetime
 
 app = FastAPI()
-tv = TvDatafeed()  # sem login
 
 @app.post("/obter-candles")
 async def obter_candles(request: Request):
     body = await request.json()
-    symbol = body['pair'].replace("/", "")
-    timeframe = body['timeframe']
+    pair = body["pair"].replace("/", "")  # Ex: BTC/USDT → BTCUSDT
+    timeframe = body["timeframe"]
 
-    map_tf = {
-        "1": Interval.in_1_minute,
-        "5": Interval.in_5_minute
+    # Define o intervalo do gráfico
+    timeframe_map = {
+        "1": "1m",
+        "5": "5m"
     }
 
-    df = tv.get_hist(symbol=symbol, exchange='BINANCE', interval=map_tf[timeframe], n_bars=20)
-    candles = df.reset_index()[['open', 'high', 'low', 'close']].to_dict(orient='records')
+    exchange = ccxt.binance()
+    candles_raw = exchange.fetch_ohlcv(pair, timeframe=timeframe_map[timeframe], limit=20)
+
+    candles = []
+    for c in candles_raw:
+        candles.append({
+            "time": datetime.datetime.utcfromtimestamp(c[0] / 1000).isoformat(),
+            "open": c[1],
+            "high": c[2],
+            "low": c[3],
+            "close": c[4]
+        })
 
     return {
-        "pair": body['pair'],
+        "pair": body["pair"],
         "timeframe": timeframe,
         "candles": candles
     }
