@@ -4,7 +4,13 @@ import httpx
 
 app = FastAPI()
 
+# Opção 1: Ler chave da variável de ambiente (Environment Variable)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# Opção 2: Ler chave do Secret File (descomente se usar Secret Files no Render)
+# with open("/etc/secrets/GROQ_API_KEY", "r") as f:
+#     GROQ_API_KEY = f.read().strip()
+
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 HEADERS = {
@@ -15,6 +21,11 @@ HEADERS = {
 @app.get("/")
 def root():
     return {"status": "API rodando com sucesso 🎉"}
+
+@app.get("/check_key")
+def check_key():
+    # Endpoint para testar se a chave está chegando
+    return {"GROQ_API_KEY": GROQ_API_KEY}
 
 @app.get("/analisar")
 async def analisar():
